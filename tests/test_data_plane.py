@@ -13,6 +13,7 @@ def assert_s3_error(error, code, status):
 
 
 
+@pytest.mark.parametrize("payload", [b"", bytes(range(256)) * 4096], ids=["empty", "binary-1MiB"])
 def test_object_integrity_and_metadata(s3, bucket, payload):
     """Verify that uploaded bytes and object metadata survive a round trip.
 
@@ -20,9 +21,35 @@ def test_object_integrity_and_metadata(s3, bucket, payload):
         Detect data corruption, missing metadata, and problems handling keys that
         contain spaces, a folder-like prefix, or Unicode characters.
 
+    Cases:
+        An empty object checks the zero-byte boundary. A reproducible 1 MiB binary
+        object contains every byte value, exercising more than plain text storage.
 
+    Steps and expected results:
+        1. Upload the payload with a content type and custom metadata.
+        2. Use HEAD to verify its exact size, content type, and metadata.
+        3. Download the object and compare every byte with the original payload.
+
+    Fixtures and cleanup:
+        s3 supplies the authenticated API client; bucket supplies an isolated
+        bucket; payload comes from parametrization. The download stream is closed
+        after reading, and the bucket fixture removes the object and bucket.
     """
-    pass
+    key = "folder/space and unicode-ž.bin"
+    s3.put_object(
+        Bucket=bucket,
+        Key=key,
+        Body=payload,
+        ContentType="application/octet-stream",
+        Metadata={"qa": "integrity"},
+    )
+    head = s3.head_object(Bucket=bucket, Key=key)
+    assert head["ContentLength"] == len(payload)
+    assert head["ContentType"] == "application/octet-stream"
+    assert head["Metadata"] == {"qa": "integrity"}
+    response = s3.get_object(Bucket=bucket, Key=key)
+    with response["Body"] as body:
+        assert body.read() == payload
 
 
 def test_overwrite_and_delete(s3, bucket):
