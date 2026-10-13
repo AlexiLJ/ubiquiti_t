@@ -3,8 +3,6 @@ import re
 import pytest
 from playwright.sync_api import expect
 
-pytestmark = pytest.mark.gui
-
 
 @pytest.mark.smoke
 def test_console_smoke(page, settings, bucket):
@@ -38,9 +36,9 @@ def test_console_smoke(page, settings, bucket):
             assertion failure. pytest-playwright closes the page and browser context.
 
         Execution:
-            Marked as both gui and smoke; --gui enables the optional console test.
+            Runs by default with the full suite and is marked as smoke.
             Run headless with installed Chrome using:
-            uv run pytest -m smoke --gui --browser chromium --browser-channel chrome
+            uv run pytest -m smoke --browser chromium --browser-channel chrome
             Add --headed --slowmo 500 to watch the browser perform its actions.
         """
     page.goto(settings.console)
