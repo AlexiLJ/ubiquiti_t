@@ -6,7 +6,8 @@ uv manages dependencies; commit `uv.lock` alongside the source.
 
 ## Setup and execution
 
-Prerequisites: Python 3.12+, uv, and Docker Compose v2 with a running Linux container engine.
+Prerequisites: Python 3.12+, uv, Google Chrome, and Docker Compose v2 with a running
+Linux container engine.
 
 Install uv first; it can install Python even if Python is not already installed.
 On Windows, open PowerShell and run:
@@ -45,59 +46,27 @@ containing `pyproject.toml` and `docker-compose.yml`) and run:
 
 ```sh
 uv sync --locked --python 3.12
-uv run playwright install chromium
 docker compose up -d --wait --wait-timeout 180
-uv run pytest
+uv run pytest --browser-channel chrome --headed
 ```
 
 `uv sync` creates the project's `.venv` and installs the locked dependencies.
 You do not need to activate the virtual environment before using `uv run`.
-The Playwright installation command downloads Chromium for the console test.
 
-After setup, `uv run pytest` is the single command for the required suite. Tests wait
-up to 90 seconds for liveness and an authenticated S3 request to succeed. A missing
-service causes a setup error, rather than a misleading skip. Requests have bounded
-timeouts and SDK retries are disabled, so unexpected failures remain visible.
+The test command above runs the full suite and opens Google Chrome for the console
+test. Tests wait up to 90 seconds for liveness and an authenticated S3 request to
+succeed. A missing service causes a setup error. Requests have bounded timeouts
+and SDK retries are disabled, so unexpected failures remain visible.
 
 The console smoke test runs with the default suite. It opens
 `http://localhost:9001/rustfs/console/auth/login/`,
 signs in and verifies that the API-created test bucket appears in the console.
 This single journey checks console accessibility, authentication and API/UI consistency.
-It is marked with `smoke` so it can also be selected separately.
-
-Run the smoke test with installed Chrome in **headless mode** (no browser window):
-
-```powershell
-uv run pytest -m smoke --browser chromium --browser-channel chrome
-```
-
-To watch the browser open and perform actions, use **headed mode**. `--slowmo 500`
-slows Playwright actions by 500 milliseconds so you can follow them:
-
-```powershell
-uv run pytest -m smoke --browser chromium --browser-channel chrome --headed --slowmo 500
-```
-
-To run only the console test with the Chromium installed during setup:
-
-```sh
-uv run pytest -m smoke --browser chromium
-```
-
-Playwright runs headless by default; `--headed` enables a visible browser window.
-No opt-in flag is needed for the console test. `-m smoke` selects smoke tests;
-currently the console test is the only smoke test.
 pytest-playwright provides an isolated browser context for each test.
-Add `--tracing retain-on-failure --screenshot only-on-failure` to any GUI command
-to save failure artifacts in `test-results/`.
 
 Useful commands:
 
 ```sh
-uv run pytest -m data
-uv run pytest -m management
-uv run pytest --collect-only
-uv run pytest --junitxml=test-results/results.xml
 uv run ruff check tests
 docker compose logs rustfs
 docker compose down
