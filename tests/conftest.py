@@ -45,6 +45,34 @@ def settings():
         region=os.getenv("RUSTFS_REGION", "us-east-1"),
     )
 
+
+@pytest.fixture(scope="session")
+def s3(settings):
+    # Pytest supplies the settings fixture because it is named in the arguments.
+    # Create one authenticated S3 client for bucket/object operations across the run.
+    client = boto3.client(
+        "s3",
+        endpoint_url=settings.endpoint,
+        aws_access_key_id=settings.access_key,
+        aws_secret_access_key=settings.secret_key,
+        region_name=settings.region,
+        config=Config(
+            # Use signed, path-style requests: localhost:9000/bucket/object.
+            signature_version="s3v4",
+            s3={"addressing_style": "path"},
+            connect_timeout=3,
+            read_timeout=10,
+            retries={"max_attempts": 0},
+            # Negotiate only required checksums for S3 compatibility. Object tests
+            # also compare downloaded bytes with the original payload directly.
+            request_checksum_calculation="when_required",
+            response_checksum_validation="when_required",
+        ),
+    )
+    # Yield the client for use, then close its connections when the session ends.
+    yield client
+    client.close()
+
 @pytest.fixture
 def bucket(s3):
     # each requesting test gets its own fresh bucket.
