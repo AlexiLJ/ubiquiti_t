@@ -1,0 +1,26 @@
+[project]
+name = "ubiquiti-task"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "boto3>=1.35,<2",
+    "httpx>=0.27,<1",
+    "pytest>=8,<10",
+    "pytest-playwright>=0.6,<1",
+]
+
+[dependency-groups]
+dev = ["ruff>=0.9,<1"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "data: S3 data plane integration tests",
+    "management: management API integration tests",
+    "gui: optional Chromium console test (enable with --gui)",
+    "smoke: focused checks of essential functionality",
+]
+
+[tool.ruff]
+line-length = 100
