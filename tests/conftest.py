@@ -20,3 +20,9 @@ class Settings:
     region: str
 
 
+def pytest_addoption(parser):
+    # hook for registering custom flags
+    # store_true is False by default and True when --gui is supplied.
+    parser.addoption("--gui", action="store_true", help="Run optional console test")
+
+
