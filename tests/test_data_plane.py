@@ -101,8 +101,22 @@ def test_nonempty_bucket_cannot_be_deleted(s3, bucket):
         Check protection against accidental data loss during bucket deletion.
         The error response alone is insufficient; the existing object must survive.
 
+    Steps and expected results:
+        1. Upload an object containing known bytes.
+        2. Attempt to delete its bucket and expect BucketNotEmpty with HTTP 409.
+        3. Download the object and verify that its original bytes remain intact.
+
+    Fixtures and cleanup:
+        s3 supplies the API client and bucket is created specifically for this test.
+        The fixture deletes the object before deleting the bucket during teardown.
     """
-    pass
+    s3.put_object(Bucket=bucket, Key="keep.txt", Body=b"keep")
+    with pytest.raises(ClientError) as error:
+        s3.delete_bucket(Bucket=bucket)
+    assert_s3_error(error, "BucketNotEmpty", 409)
+    response = s3.get_object(Bucket=bucket, Key="keep.txt")
+    with response["Body"] as body:
+        assert body.read() == b"keep"
 
 
 def test_private_object_rejects_anonymous_read(s3, bucket, settings, http):
@@ -118,9 +132,16 @@ def test_private_object_rejects_anonymous_read(s3, bucket, settings, http):
         3. Expect HTTP 403 and an AccessDenied error.
         4. Verify that the response body does not contain the object's known payload.
 
-
+    Fixtures and cleanup:
+        s3 uploads the object; bucket provides its isolated container; settings
+        provides the endpoint; http sends the unsigned request. The bucket fixture
+        removes the object and bucket after the test.
     """
-    pass
+    s3.put_object(Bucket=bucket, Key="private.txt", Body=b"confidential")
+    response = http.get(f"{settings.endpoint}/{bucket}/private.txt")
+    assert response.status_code == 403
+    assert "AccessDenied" in response.text
+    assert b"confidential" not in response.content
 
 
 @pytest.mark.skip(reason="Requires a multi-node cluster and controlled node failure injection")
