@@ -59,9 +59,29 @@ def test_overwrite_and_delete(s3, bucket):
         Detect stale content after an overwrite and incorrect object lifecycle
         behavior. A shorter replacement makes leftover bytes easy to detect.
 
+    Steps and expected results:
+        1. Upload original content, then overwrite the same key with shorter data.
+        2. Download the object and verify that only the replacement bytes remain.
+        3. Delete the object; a subsequent GET must return NoSuchKey with HTTP 404.
+        4. Delete the same key again; the request must succeed with HTTP 204.
 
+    Fixtures and cleanup:
+        s3 is the authenticated API client and bucket is unique to this test.
+        The bucket fixture cleans up any remaining object and then the bucket,
+        including when an assertion fails before the explicit deletion step.
     """
-    pass
+    key = "overwrite.txt"
+    for payload in [b"original longer content", b"new"]:
+        s3.put_object(Bucket=bucket, Key=key, Body=payload)
+    response = s3.get_object(Bucket=bucket, Key=key)
+    with response["Body"] as body:
+        assert body.read() == b"new"
+    s3.delete_object(Bucket=bucket, Key=key)
+    with pytest.raises(ClientError) as error:
+        s3.get_object(Bucket=bucket, Key=key)
+    assert_s3_error(error, "NoSuchKey", 404)
+    assert s3.delete_object(Bucket=bucket, Key=key)["ResponseMetadata"]["HTTPStatusCode"] == 204
+
 
 def test_listing_prefix_and_pagination(s3, bucket):
     """Verify that a filtered listing returns all expected keys across pages.
