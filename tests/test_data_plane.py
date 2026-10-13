@@ -143,8 +143,8 @@ def test_private_object_rejects_anonymous_read(s3, bucket, settings, http):
     assert "AccessDenied" in response.text
     assert b"confidential" not in response.content
 
+#### ========== Requires a multi-node cluster and controlled node failure injection ============
 
-@pytest.mark.skip(reason="Requires a multi-node cluster and controlled node failure injection")
 def test_data_available_when_one_node_is_offline():
     """Verify data availability after one storage node stops working.
 
@@ -163,7 +163,6 @@ def test_data_available_when_one_node_is_offline():
     pass
 
 
-@pytest.mark.skip(reason="Requires a multi-node cluster and controlled node failure injection")
 def test_data_operations_when_half_of_nodes_are_offline():
     """Verify quorum-dependent behavior when half the storage nodes are unavailable.
 
@@ -185,7 +184,6 @@ def test_data_operations_when_half_of_nodes_are_offline():
     pass
 
 
-@pytest.mark.skip(reason="Requires a multi-node cluster and controlled node failure injection")
 def test_writes_rejected_when_quorum_is_lost():
     """Verify that the cluster does not acknowledge writes without write quorum.
 
@@ -204,7 +202,6 @@ def test_writes_rejected_when_quorum_is_lost():
     pass
 
 
-@pytest.mark.skip(reason="Requires a multi-node cluster and controlled node failure injection")
 def test_recovered_node_synchronizes_missed_changes():
     """Verify that a recovered node catches up with changes made during its outage.
 
@@ -226,7 +223,6 @@ def test_recovered_node_synchronizes_missed_changes():
     pass
 
 
-@pytest.mark.skip(reason="Requires a multi-node cluster with individually addressable nodes")
 def test_object_synchronization_between_nodes():
     """Verify that acknowledged object changes are consistent across node endpoints.
 
@@ -246,7 +242,6 @@ def test_object_synchronization_between_nodes():
     pass
 
 
-@pytest.mark.skip(reason="Requires a multi-node cluster and controlled network partition injection")
 def test_network_partition_preserves_acknowledged_data():
     """Verify data safety and synchronization after a cluster network partition.
 

@@ -24,7 +24,7 @@ def admin_get(http, settings, secret=None):
     return http.get(request.url, headers=dict(request.headers))
 
 
-pytest.mark.parametrize("path", ["/health", "/health/ready"])
+@pytest.mark.parametrize("path", ["/health", "/health/ready"])
 def test_health(settings, http, path):
     """Verify successful liveness and readiness responses from the running service.
 
