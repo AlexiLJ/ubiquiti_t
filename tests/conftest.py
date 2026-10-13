@@ -45,3 +45,20 @@ def settings():
         region=os.getenv("RUSTFS_REGION", "us-east-1"),
     )
 
+@pytest.fixture
+def bucket(s3):
+    # each requesting test gets its own fresh bucket.
+    name = f"qa-{uuid4().hex}"
+    s3.create_bucket(Bucket=name)
+
+    yield name
+    # Remove objects from every listing page, touching only this test's bucket.
+    for page in s3.get_paginator("list_objects_v2").paginate(Bucket=name):
+        # Key is an object's name. Bulk deletion expects a list of {"Key": name} entries.
+        objects = [{"Key": obj["Key"]} for obj in page.get("Contents", [])]
+        if objects:
+            result = s3.delete_objects(Bucket=name, Delete={"Objects": objects})
+            # Bulk deletion can partially fail even when the request succeeded.
+            assert not result.get("Errors"), result.get("Errors")
+    # S3 allows bucket deletion only after its objects have been removed.
+    s3.delete_bucket(Bucket=name)
